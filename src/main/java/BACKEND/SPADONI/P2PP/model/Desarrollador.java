@@ -28,7 +28,7 @@ public class Desarrollador {
 
     public Desarrollador() {
     }
-
+    
     public Desarrollador(String nombre, Proyecto proyecto, String habilidades, Boolean disponible) {
         this.nombre = nombre;
         this.proyecto = proyecto;
@@ -36,6 +36,12 @@ public class Desarrollador {
         this.disponible = disponible;
     }
 
+    public Desarrollador(String nombre, String habilidades, Boolean disponible) {
+        this.nombre = nombre;
+        this.habilidades = habilidades;
+        this.disponible = disponible;
+    }
+    
     public String getNombre() {
         return nombre;
     }

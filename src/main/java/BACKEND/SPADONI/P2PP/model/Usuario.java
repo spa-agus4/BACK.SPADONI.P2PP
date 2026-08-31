@@ -12,20 +12,16 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Inheritance;
 import jakarta.persistence.InheritanceType;
 import jakarta.persistence.Table;
-import java.util.List;
-import BACKEND.SPADONI.P2PP.repository.ProyectoRepository;
-import BACKEND.SPADONI.P2PP.repository.UsuarioRepository;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
 
 @Entity
 @Table(name = "usuario")
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(name = "rol", discriminatorType = DiscriminatorType.STRING)
+
 // Anotaciones de Jackson para saber qué subclase instanciar según el JSON
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME, 
@@ -75,21 +71,6 @@ public abstract class Usuario {
         this.nombreUsuario = nombreUsuario;
         this.contrasena = contrasena;
     }
-
-    // --- MÉTODOS ABSTRACTOS (POLIMORFISMO) ---
-    // Cada subclase (Cliente, Gerente, Admin) implementará cómo obtiene sus proyectos
-    public abstract List<Proyecto> filtrarProyectos(ProyectoRepository repo);
-    
-    // Método abstracto o con comportamiento por defecto
-    public List<Usuario> obtenerUsuariosVisibles(UsuarioRepository repo) {
-        // Por defecto (ej. Cliente), no puede listar usuarios
-        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tenés permisos para listar usuarios");
-    }
-    
-    // Para que despues los clientes respondan si tiene proyectos o no
-    public boolean puedeEliminarse(ProyectoRepository proyectoRepo) {
-        return true; // por defecto, cualquier usuario puede eliminarse
-    }
     
     // --- GETTERS Y SETTERS ---
     public Long getId() { return id; }
@@ -106,17 +87,5 @@ public abstract class Usuario {
 
     public Boolean getActivo() { return activo; }
     public void setActivo(Boolean activo) { this.activo = activo; }
-    
-    
 
-    // --- TOSTRING ---
-
-    @Override
-    public String toString() {
-        return "Usuario{" +
-                "id=" + id +
-                ", nombreUsuario='" + nombreUsuario + '\'' +
-                ", rol=" + rol +
-                '}';
-    }
 }

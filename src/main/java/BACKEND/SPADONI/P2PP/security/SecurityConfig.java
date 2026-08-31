@@ -23,14 +23,15 @@ public class SecurityConfig {
     private JwtFilter jwtFilter;
 
     @Value("${app.frontend.url}")
-    private String frontendUrl;
+    private List<String> frontendUrls;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .cors(cors -> cors.configurationSource(request -> {
             var config = new org.springframework.web.cors.CorsConfiguration();
-            config.setAllowedOrigins(List.of(frontendUrl));
+            //config.setAllowedOrigins(List.of(frontendUrl));
+            config.setAllowedOrigins(frontendUrls);
             config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
             config.setAllowedHeaders(List.of("*"));
             config.setAllowCredentials(true);
@@ -50,7 +51,7 @@ public class SecurityConfig {
                 .requestMatchers("/error").permitAll() // PERMITIR EL DISPATCH DE ERRORES (Esto suele arreglar el 403 fantasma)
                         
                 // 2. REGLA ESPECIAL PARA USUARIOS: 
-                // Permitir el listado de usuarios a GERENTE y ADMINISTRADOR (el cliente rebotará por rol o por el método polimórfico)
+                // Permitir el listado de usuarios a GERENTE y ADMINISTRADOR (el cliente rebotará por rol)
                 .requestMatchers(HttpMethod.GET, "/api/usuarios").hasAnyRole("GERENTE", "ADMINISTRADOR")
                 // Editar / Crear / Eliminar usuarios en general (solo ADMIN)
                 .requestMatchers("/api/usuarios/**").hasRole("ADMINISTRADOR")
@@ -73,8 +74,9 @@ public class SecurityConfig {
                 .requestMatchers("/api/proyectos/**").hasRole("GERENTE")
                 
                 // 5. REGLAS PARA CLIENTES
-                // Listado y consulta de clientes: GERENTE y ADMINISTRADOR
-                .requestMatchers(HttpMethod.GET, "/api/clientes/**").hasAnyRole("GERENTE", "ADMINISTRADOR")
+                // Listado y consulta de clientes: GERENTE
+                //.requestMatchers(HttpMethod.GET, "/api/clientes/**").hasAnyRole("GERENTE", "ADMINISTRADOR") // LO REMOVI XQ NO DEBERIA VER LOS DATOS DE LOS CLIENTES
+                .requestMatchers(HttpMethod.GET, "/api/clientes/**").hasAnyRole("GERENTE")
                 // Crear, editar o eliminar clientes (datos personales): solo GERENTE
                 .requestMatchers("/api/clientes/**").hasRole("GERENTE")
                         

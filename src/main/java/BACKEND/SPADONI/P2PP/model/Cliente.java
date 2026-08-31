@@ -3,8 +3,6 @@ package BACKEND.SPADONI.P2PP.model;
 import jakarta.persistence.Column;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
-import java.util.List;
-import BACKEND.SPADONI.P2PP.repository.ProyectoRepository;
 
 @Entity
 @DiscriminatorValue("CLIENTE")
@@ -36,18 +34,13 @@ public class Cliente extends Usuario {
         this.telefono = telefono;
     }
 
-    // --- IMPLEMENTACIÓN POLIMÓRFICA ---
-    @Override
-    public List<Proyecto> filtrarProyectos(ProyectoRepository repo) {
-        // El cliente solo puede consultar los proyectos asociados a su ID
-        return repo.findByClienteId(this.getId());
-    }
-    
+    /* --- IMPLEMENTACIÓN POLIMÓRFICA ---
+  
     @Override
     public boolean puedeEliminarse(ProyectoRepository proyectoRepo) {
         return filtrarProyectos(proyectoRepo).isEmpty();
     }
-    
+    */
 
     // --- GETTERS Y SETTERS ---
 

@@ -40,4 +40,96 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("message", "Ocurrió un error inesperado. Intentá más tarde."));
     }
+
+    @ExceptionHandler(CredencialesInvalidasException.class)
+    public ResponseEntity<Map<String, String>> manejarCredencialesInvalidas(CredencialesInvalidasException ex) {
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("message", ex.getMessage()));
+    }
+
+    @ExceptionHandler(AltaClienteNoPermitidaException.class)
+    public ResponseEntity<Map<String, String>> manejarAltaCliente(AltaClienteNoPermitidaException ex) {
+        return ResponseEntity
+                .badRequest()
+                .body(Map.of("mensaje", ex.getMessage()));
+    }
+
+    @ExceptionHandler(InvalidRolException.class)
+    public ResponseEntity<Map<String, String>> manejarRolInvalido(InvalidRolException ex) {
+        return ResponseEntity
+                .badRequest()
+                .body(Map.of("message", ex.getMessage()));
+    }
+
+    @ExceptionHandler(NombreUsuarioExistenteException.class)
+    public ResponseEntity<Map<String, String>> manejarNombreUsuarioExistente(NombreUsuarioExistenteException ex) {
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(Map.of("message", ex.getMessage()));
+    }
+
+    @ExceptionHandler(AutoEliminacionNoPermitidaException.class)
+    public ResponseEntity<Map<String, String>> manejarAutoEliminacion(AutoEliminacionNoPermitidaException ex) {
+        return ResponseEntity
+                .badRequest()
+                .body(Map.of("message", ex.getMessage()));
+    }
+
+    @ExceptionHandler(UsuarioNoEncontradoException.class)
+    public ResponseEntity<Map<String, String>> manejarUsuarioNoEncontrado(UsuarioNoEncontradoException ex) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(Map.of("message", ex.getMessage()));
+    }
+
+    @ExceptionHandler(DesarrolladorNoEncontradoException.class)
+    public ResponseEntity<Map<String, String>> manejarDesarrolladorNoEncontrado(DesarrolladorNoEncontradoException ex) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(Map.of("message", ex.getMessage()));
+    }
+
+    @ExceptionHandler(AccesoProyectoDenegadoException.class)
+    public ResponseEntity<Map<String, String>> manejarAccesoProyectoDenegado(AccesoProyectoDenegadoException ex) {
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("message", ex.getMessage()));
+    }
+
+    @ExceptionHandler(NombreDesarrolladorExistenteException.class)
+    public ResponseEntity<Map<String, String>> manejarNombreDesarrolladorExistente(NombreDesarrolladorExistenteException ex) {
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(Map.of("message", ex.getMessage()));
+    }
+
+    @ExceptionHandler(DesarrolladorNoDisponibleException.class)
+    public ResponseEntity<Map<String, String>> manejarDesarrolladorNoDisponible(DesarrolladorNoDisponibleException ex) {
+
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(Map.of("message", ex.getMessage()));
+    }
+    
+    @ExceptionHandler(ProyectoNoEncontradoException.class)
+    public ResponseEntity<Map<String, String>> manejarProyectoNoEncontrado(ProyectoNoEncontradoException ex) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(Map.of("message", ex.getMessage()));
+    }
+    
+    @ExceptionHandler(ClienteInhabilitadoException.class)
+    public ResponseEntity<Map<String, String>> manejarClienteInhabilitado(ClienteInhabilitadoException ex) {
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(Map.of("message", ex.getMessage()));
+    }
+    
+    @ExceptionHandler(ClienteNoEncontradoException.class)
+    public ResponseEntity<Map<String, String>> manejarClienteNoEncontrado(ClienteNoEncontradoException ex) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(Map.of("message", ex.getMessage()));
+    }
 }

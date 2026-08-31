@@ -1,80 +1,94 @@
 package BACKEND.SPADONI.P2PP.services;
 
+import BACKEND.SPADONI.P2PP.DTO.ClienteDTO;
 import BACKEND.SPADONI.P2PP.DTO.ClienteDatosDTO;
+import BACKEND.SPADONI.P2PP.exceptions.ClienteInhabilitadoException;
+import BACKEND.SPADONI.P2PP.exceptions.ClienteNoEncontradoException;
+import BACKEND.SPADONI.P2PP.mapper.ClienteMapper;
 import BACKEND.SPADONI.P2PP.model.Cliente;
-import BACKEND.SPADONI.P2PP.model.Proyecto;
-import BACKEND.SPADONI.P2PP.model.Usuario;
 import BACKEND.SPADONI.P2PP.repository.ClienteRepository;
 import BACKEND.SPADONI.P2PP.repository.ProyectoRepository;
-import BACKEND.SPADONI.P2PP.repository.UsuarioRepository;
-import jakarta.transaction.Transactional;
 import java.util.List;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.http.HttpStatus;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class ClienteService {
 
     private final ClienteRepository clienteRepo;
     private final ProyectoRepository proyectoRepo;
-
-    public ClienteService(ClienteRepository clienteRepo, ProyectoRepository proyectoRepo) {
+    
+    private final ClienteMapper cMapper;
+ 
+    public ClienteService(
+            ClienteRepository clienteRepo,
+            ClienteMapper cMapper,
+            ProyectoRepository proyectoRepo){
+        
         this.clienteRepo = clienteRepo;
+        this.cMapper = cMapper;
         this.proyectoRepo = proyectoRepo;
     }
-
-    public Cliente obtenerPorId(Long id) {
+  
+    private Cliente obtenerPorId(Long id) {
         return clienteRepo.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente no encontrado con ID: " + id));
+                .orElseThrow(() -> new ClienteNoEncontradoException("Cliente no encontrado con ID: " + id));
     }
 
-    public List<Cliente> listar() {
-        return clienteRepo.findAll(); // Devuelve directamente List<Cliente>
+    public List<ClienteDTO> listar() {
+        return cMapper.listToDTO(clienteRepo.findAll());
     }
 
-    public Cliente crear(ClienteDatosDTO datos) {
+    public ClienteDTO crear(ClienteDatosDTO datos) {
         Cliente cliente = new Cliente();
         cliente.setNombre(datos.nombre());
         cliente.setDireccion(datos.direccion());
         cliente.setEmail(datos.email());
         cliente.setTelefono(datos.telefono());
         cliente.setActivo(false); // sin credenciales todavía
-        return clienteRepo.save(cliente);
+        return cMapper.toDTO(clienteRepo.save(cliente));
     }
 
-    public Cliente eliminar(Long id) {
-        Cliente cliente = clienteRepo.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente no encontrado"));
+    public ClienteDTO eliminar(Long id) {
+        
+        Cliente cliente = obtenerPorId(id);
 
-        if (cliente.puedeEliminarse(proyectoRepo)) {
-            clienteRepo.delete(cliente);
-            return null; // se eliminó físicamente
+        if(!puedeEliminarse(cliente)){
+            cliente.setActivo(false);
+            return cMapper.toDTO(clienteRepo.save(cliente)); // Retorna el cliente inhabilitado (activo = false)
+            //El cliente tiene proyectos asociados, no se puede eliminar
         }
 
-        cliente.setActivo(false);
-        return clienteRepo.save(cliente); // se inhabilitó
+        clienteRepo.delete(cliente);
+        return null; // Retorna null indicando que fue borrado físicamente
+    }
+    
+    private boolean puedeEliminarse(Cliente c){   
+        return !proyectoRepo.existsByClienteId(c.getId());    // El cliente tiene proyectos asociados, por lo que no se elimina. Se lo inhabilita.
+    }
+    
+    public Cliente obtenerActivo(Long clienteId) {
+
+        Cliente cliente = obtenerPorId(clienteId);
+
+        if (Boolean.FALSE.equals(cliente.getActivo())) {
+            throw new ClienteInhabilitadoException("No se pueden asignar proyectos a un cliente inhabilitado");
+        }
+
+        return cliente;
     }
     
     public void habilitar(Long id) {
-        Cliente cliente = clienteRepo.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente no encontrado"));
+        Cliente cliente = obtenerPorId(id); // Trae el cliente o tira excepción si no existe
         cliente.setActivo(true);
         clienteRepo.save(cliente);
     }
 
-    public Cliente actualizarDatosPersonales(Long id, ClienteDatosDTO datos) {
-        Cliente cliente = clienteRepo.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente no encontrado"));
+    public ClienteDTO actualizarDatosPersonales(Long id, ClienteDatosDTO datos) {
+        Cliente cliente = obtenerPorId(id); // tira exception si no lo encuentra
         cliente.setNombre(datos.nombre());
         cliente.setDireccion(datos.direccion());
         cliente.setEmail(datos.email());
         cliente.setTelefono(datos.telefono());
-        return clienteRepo.save(cliente);
+        return cMapper.toDTO(clienteRepo.save(cliente));
     }
 }

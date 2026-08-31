@@ -1,76 +1,93 @@
 package BACKEND.SPADONI.P2PP.services;
 
+import BACKEND.SPADONI.P2PP.DTO.ProyectoDTO;
 import BACKEND.SPADONI.P2PP.DTO.ProyectoDatosDTO;
-import BACKEND.SPADONI.P2PP.model.Cliente;
-import BACKEND.SPADONI.P2PP.model.Desarrollador;
+import BACKEND.SPADONI.P2PP.exceptions.AccesoProyectoDenegadoException;
+import BACKEND.SPADONI.P2PP.exceptions.ProyectoNoEncontradoException;
+import BACKEND.SPADONI.P2PP.mapper.ProyectoMapper;
 import BACKEND.SPADONI.P2PP.model.EstadoProceso;
 import BACKEND.SPADONI.P2PP.model.Proyecto;
 import BACKEND.SPADONI.P2PP.model.Usuario;
-import BACKEND.SPADONI.P2PP.repository.ClienteRepository;
-import BACKEND.SPADONI.P2PP.repository.DesarrolladorRepository;
 import BACKEND.SPADONI.P2PP.repository.ProyectoRepository;
-import BACKEND.SPADONI.P2PP.repository.UsuarioRepository;
-import jakarta.transaction.Transactional;
+import BACKEND.SPADONI.P2PP.services.proyecto.ProyectoViewer;
+import BACKEND.SPADONI.P2PP.services.proyecto.ProyectoViewerFactory;
+import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class ProyectoService {
 
-    @Autowired
-    private ProyectoRepository proyectoRepo;
+    private final ProyectoRepository proyectoRepo;
+    
+    private final UsuarioService usuarioService; // Necesario para buscar al usuario que solicita los proyectos
+    private final ClienteService clienteService;
+    private final AsignacionDesarrolladorService asignacionDevService;
+    
+    private final ProyectoViewerFactory proyectoViewerFactory;
+    
+    private final ProyectoMapper pMapper;
 
-    @Autowired
-    private UsuarioRepository usuarioRepo; // Necesario para buscar al usuario que solicita los proyectos
+    public ProyectoService(
+            ProyectoRepository proyectoRepo,
+            UsuarioService usuarioService,
+            ProyectoViewerFactory proyectoViewerFactory,
+            ProyectoMapper pMapper,
+            ClienteService clienteService,
+            AsignacionDesarrolladorService asignacionDevService) {
 
-    @Autowired
-    private DesarrolladorRepository desarrolladorRepo;
-
-    @Autowired
-    private ClienteRepository clienteRepo;
+        this.proyectoRepo = proyectoRepo;
+        this.usuarioService = usuarioService;
+        this.proyectoViewerFactory = proyectoViewerFactory;
+        this.pMapper = pMapper;
+        this.clienteService = clienteService;
+        this.asignacionDevService = asignacionDevService;
+    }
 
     public Proyecto obtenerPorId(Long id) {
         return proyectoRepo.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Proyecto no encontrado con ID: " + id));
+                .orElseThrow(() -> new ProyectoNoEncontradoException("Proyecto no encontrado con ID: " + id));
+    }
+    
+    public ProyectoDTO obtenerProyecto(Long idProyecto, String nombreUsuario){
+        Proyecto p = obtenerPorId(idProyecto);
+        if(puedeVerProyecto(p, usuarioService.obtenerPorNombreUsuario(nombreUsuario)))
+            return pMapper.toDTO(p);
+        else
+            throw new AccesoProyectoDenegadoException("Acceso al proyecto denegado");
+    }
+    
+    public List<ProyectoDTO> listar(String nombreUsuario) {
+
+        Usuario usuario = usuarioService.obtenerPorNombreUsuario(nombreUsuario);
+
+        ProyectoViewer viewer = proyectoViewerFactory.obtenerViewer(usuario.getRol());
+        
+        return pMapper.listToDTO(viewer.mostrarProyectos(usuario));
     }
 
-    /**
-     * Método polimórfico principal para listar proyectos. Le pide al modelo
-     * Usuario (Cliente, Gerente, Admin) que ejecute su propia lógica.
-     */
-    public List<Proyecto> listar(Long usuarioId) {
-        Usuario usuario = usuarioRepo.findById(usuarioId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado con ID: " + usuarioId));
-
-        // El usuario ejecuta su propia versión de filtrarProyectos(repo)
-        return usuario.filtrarProyectos(proyectoRepo);
-    }
-
-    public Proyecto crear(ProyectoDatosDTO datos) {
+    public ProyectoDTO crear(ProyectoDatosDTO datos) {
         Proyecto p = new Proyecto();
-        p.setCliente(obtenerClienteActivo(datos.clienteId()));
+        p.setCliente(clienteService.obtenerActivo(datos.clienteId()));
         p = aplicarDatos(p, datos);
-        p.setEstadoProceso(datos.estadoProceso());
-        return proyectoRepo.save(p);
+        return pMapper.toDTO(proyectoRepo.save(p));
     }
-
-    private Cliente obtenerClienteActivo(Long clienteId) {  // veificamos si el cliente està inhabilitado o no
-        Cliente cliente = clienteRepo.findById(clienteId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente no encontrado"));
-        if (Boolean.FALSE.equals(cliente.getActivo())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "No se pueden asignar proyectos a un cliente inhabilitado");
-        }
-        return cliente;
+    
+    private boolean puedeVerProyecto(Proyecto p, Usuario u){
+        ProyectoViewer viewer = proyectoViewerFactory.obtenerViewer(u.getRol());
+        return viewer.puedeVerProyecto(u, p); 
     }
-
+    
+    public boolean puedeVerProyecto(Long idProyecto, Usuario u) {
+        Proyecto p = obtenerPorId(idProyecto);
+        return puedeVerProyecto(p, u);
+    }
+    
     @Transactional
-    public Proyecto actualizar(Long id, ProyectoDatosDTO datos) {
+    public ProyectoDTO actualizar(Long id, ProyectoDatosDTO datos) {
         Proyecto p = obtenerPorId(id);
         if (!datos.clienteId().equals(p.getCliente().getId())) {
-            p.setCliente(obtenerClienteActivo(datos.clienteId()));
+            p.setCliente(clienteService.obtenerActivo(datos.clienteId()));  // Si el proyecto cambió de dueño, verifico q el actual no esté inhabilitado y le asigno el proyecto
         }
 
         boolean saleDeEnCurso = p.getEstadoProceso() == EstadoProceso.EN_CURSO
@@ -79,20 +96,15 @@ public class ProyectoService {
         Proyecto guardado = proyectoRepo.save(aplicarDatos(p, datos));
 
         if (saleDeEnCurso) {
-            liberarDevs(id);
+            liberarDevs(id);    // liberamos a los devs porque el proyecto ya no está en desarrollo
             // fecha final (hoy)
         }
 
-        return guardado;
+        return pMapper.toDTO(guardado);
     }
 
     private void liberarDevs(Long proyectoId) {
-        List<Desarrollador> devs = desarrolladorRepo.findByProyectoId(proyectoId);
-        for (Desarrollador dev : devs) {
-            dev.setProyecto(null);
-            dev.setDisponible(true);
-        }
-        desarrolladorRepo.saveAll(devs);
+        asignacionDevService.removerDevsDeProyecto(proyectoId);
     }
 
     private Proyecto aplicarDatos(Proyecto p, ProyectoDatosDTO datos) {
@@ -108,8 +120,7 @@ public class ProyectoService {
 
     @Transactional
     public void eliminar(Long proyectoId) {
-        Proyecto proyecto = proyectoRepo.findById(proyectoId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Proyecto no encontrado"));
+        Proyecto proyecto = obtenerPorId(proyectoId);
         liberarDevs(proyectoId);
         proyectoRepo.delete(proyecto);
     }
