@@ -1,6 +1,9 @@
 package BACKEND.SPADONI.P2PP.mapper;
 
+import BACKEND.SPADONI.P2PP.DTO.RespuestaDatosClienteDTO;
 import BACKEND.SPADONI.P2PP.DTO.UsuarioDTO;
+import BACKEND.SPADONI.P2PP.DTO.UsuarioListadoDTO;
+import BACKEND.SPADONI.P2PP.model.Cliente;
 import BACKEND.SPADONI.P2PP.model.Usuario;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,7 +25,7 @@ public class UsuarioMapper {
         return dto;
     }
     
-    public List<UsuarioDTO> listToDTO(List<Usuario> usuarios){
+    public List<UsuarioDTO> toDTO(List<Usuario> usuarios){
         
         List<UsuarioDTO> dtos = new ArrayList<>();
         
@@ -32,6 +35,44 @@ public class UsuarioMapper {
         
         return dtos;
     }
+    
+    
+    // ----- LOS DE ABAJO SON MAPPERS PARA MOSTRAR CUALQUIER TIPO DE USUARIO EN LA LISTA DE USUARIOS
+    
+    public UsuarioListadoDTO toListadoDTO(Usuario u) {
+
+        UsuarioListadoDTO dto = new UsuarioListadoDTO();
+
+        dto.setUsuario(toDTO(u));
+
+        if (u instanceof Cliente) {
+            Cliente cliente = (Cliente) u;
+
+            RespuestaDatosClienteDTO datos = new RespuestaDatosClienteDTO();
+
+            datos.setNombre(cliente.getNombre());
+            datos.setDireccion(cliente.getDireccion());
+            datos.setEmail(cliente.getEmail());
+            datos.setTelefono(cliente.getTelefono());
+
+            dto.setDatosCliente(datos);
+        }
+
+        return dto;
+    }
+    
+    public List<UsuarioListadoDTO> toListadoDTO(List<Usuario> usuarios){
+        
+        List<UsuarioListadoDTO> dtos = new ArrayList<>();
+        
+        for(Usuario usuario : usuarios){
+            dtos.add(toListadoDTO(usuario));
+        }
+        
+        return dtos;
+    }
+    
+    
     
     
     // Pasajes de DTO a MODELO

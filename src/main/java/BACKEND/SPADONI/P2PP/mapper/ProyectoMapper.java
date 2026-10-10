@@ -33,7 +33,7 @@ public class ProyectoMapper {
         return dto;
     }
 
-    public List<ProyectoDTO> listToDTO(List<Proyecto> proyectos) {
+    public List<ProyectoDTO> toDTO(List<Proyecto> proyectos) {
 
         List<ProyectoDTO> dtos = new ArrayList<>();
 

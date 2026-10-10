@@ -63,7 +63,7 @@ public class ProyectoService {
 
         ProyectoViewer viewer = proyectoViewerFactory.obtenerViewer(usuario.getRol());
         
-        return pMapper.listToDTO(viewer.mostrarProyectos(usuario));
+        return pMapper.toDTO(viewer.mostrarProyectos(usuario));
     }
 
     public ProyectoDTO crear(ProyectoDatosDTO datos) {

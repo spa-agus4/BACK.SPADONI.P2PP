@@ -44,7 +44,7 @@ public class DesarrolladorService {
     }
 
     public List<DesarrolladorDTO> listar() {
-        return dMapper.listToDTO(devRepo.findAll());
+        return dMapper.toDTO(devRepo.findAll());
     }
 
     public List<DesarrolladorDTO> listarPorProyecto(Long proyectoId, String nombreUsuario) {
@@ -60,7 +60,7 @@ public class DesarrolladorService {
     }
 
     private List<DesarrolladorDTO> listarPorProyectoId(Long proyectoId) {
-        return dMapper.listToDTO(devRepo.findByProyectoId(proyectoId));
+        return dMapper.toDTO(devRepo.findByProyectoId(proyectoId));
     }
 
     public DesarrolladorDTO crear(DesarrolladorAltaDTO datos) {

@@ -35,7 +35,7 @@ public class DesarrolladorMapper {
         return dto;
     }
 
-    public List<DesarrolladorDTO> listToDTO(List<Desarrollador> devs) {
+    public List<DesarrolladorDTO> toDTO(List<Desarrollador> devs) {
 
         List<DesarrolladorDTO> dtos = new ArrayList<>();
 

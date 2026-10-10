@@ -4,6 +4,7 @@ import BACKEND.SPADONI.P2PP.DTO.CredencialesDTO;
 import BACKEND.SPADONI.P2PP.DTO.RespuestaActualizacion;
 import BACKEND.SPADONI.P2PP.DTO.UsuarioAltaDTO;
 import BACKEND.SPADONI.P2PP.DTO.UsuarioDTO;
+import BACKEND.SPADONI.P2PP.DTO.UsuarioListadoDTO;
 import BACKEND.SPADONI.P2PP.services.UsuarioService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -24,7 +25,7 @@ public class UsuarioController {
     
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public UsuarioDTO crear(@Valid @RequestBody UsuarioAltaDTO datos) {
+    public UsuarioListadoDTO crear(@Valid @RequestBody UsuarioAltaDTO datos) {
         return service.crear(datos);
     }
     
@@ -35,9 +36,9 @@ public class UsuarioController {
     }
     
     @DeleteMapping("/{id}")
-    public ResponseEntity<UsuarioDTO> eliminar(Authentication auth, @PathVariable Long id) {
+    public ResponseEntity<UsuarioListadoDTO> eliminar(Authentication auth, @PathVariable Long id) {
         
-        UsuarioDTO usuarioAEliminar = service.eliminar(id, auth.getName());
+        UsuarioListadoDTO usuarioAEliminar = service.eliminar(id, auth.getName());
 
         // Si retornó el usuario (significa que solo se inhabilitó) -> HTTP 200 con el usuario en el body
         if (usuarioAEliminar != null) {
@@ -60,7 +61,7 @@ public class UsuarioController {
     }
     
     @GetMapping
-    public List<UsuarioDTO> listar(Authentication auth) {
+    public List<UsuarioListadoDTO> listar(Authentication auth) {
         return service.listar(auth.getName());
     }
 }

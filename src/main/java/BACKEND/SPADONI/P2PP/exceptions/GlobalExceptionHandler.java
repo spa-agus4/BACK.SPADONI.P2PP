@@ -10,6 +10,7 @@ import org.springframework.web.server.ResponseStatusException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.Map;
+import org.springframework.validation.ObjectError;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -23,12 +24,12 @@ public class GlobalExceptionHandler {
                 .body(Map.of("message", ex.getReason() != null ? ex.getReason() : "Ocurrió un error"));
     }
 
-    // Falla un @Valid/@NotBlank/@Size/@Email en un DTO
+    // Falla un @Valid/@NotBlank/@Size/@Email o un Custom Validator a nivel de DTO
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, String>> manejarValidacion(MethodArgumentNotValidException ex) {
-        String mensaje = ex.getBindingResult().getFieldErrors().stream()
+        String mensaje = ex.getBindingResult().getAllErrors().stream()
                 .findFirst()
-                .map(FieldError::getDefaultMessage)
+                .map(ObjectError::getDefaultMessage)
                 .orElse("Datos inválidos");
         return ResponseEntity.badRequest().body(Map.of("message", mensaje));
     }
@@ -128,6 +129,13 @@ public class GlobalExceptionHandler {
     
     @ExceptionHandler(ClienteNoEncontradoException.class)
     public ResponseEntity<Map<String, String>> manejarClienteNoEncontrado(ClienteNoEncontradoException ex) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(Map.of("message", ex.getMessage()));
+    }
+    
+    @ExceptionHandler(ClienteSinCredenciales.class)
+    public ResponseEntity<Map<String, String>> manejarClienteSinCredenciales(ClienteSinCredenciales ex) {
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
                 .body(Map.of("message", ex.getMessage()));

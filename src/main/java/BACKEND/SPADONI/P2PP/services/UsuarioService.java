@@ -5,6 +5,7 @@ import BACKEND.SPADONI.P2PP.DTO.CredencialesDTO;
 import BACKEND.SPADONI.P2PP.DTO.RespuestaActualizacion;
 import BACKEND.SPADONI.P2PP.DTO.UsuarioAltaDTO;
 import BACKEND.SPADONI.P2PP.DTO.UsuarioDTO;
+import BACKEND.SPADONI.P2PP.DTO.UsuarioListadoDTO;
 import BACKEND.SPADONI.P2PP.exceptions.AltaClienteNoPermitidaException;
 import BACKEND.SPADONI.P2PP.exceptions.AutoEliminacionNoPermitidaException;
 import BACKEND.SPADONI.P2PP.exceptions.NombreUsuarioExistenteException;
@@ -56,13 +57,13 @@ public class UsuarioService {
     }
     
     
-    public List<UsuarioDTO> listar(String usuarioLogueadoNombre) {   // Al final no era necesario polimorfismo, pero podria servir si se agrega otro ROL
+    public List<UsuarioListadoDTO> listar(String usuarioLogueadoNombre) {   // Al final no era necesario polimorfismo, pero podria servir si se agrega otro ROL
         Usuario solicitante = obtenerPorNombreUsuario(usuarioLogueadoNombre);
         UsuarioViewer viewer = usuarioViewerFactory.obtenerViewer(solicitante.getRol());
-        return uMapper.listToDTO(viewer.mostrarUsuarios(solicitante));
+        return uMapper.toListadoDTO(viewer.mostrarUsuarios(solicitante));
     }
     
-    public UsuarioDTO crear(UsuarioAltaDTO datos) {
+    public UsuarioListadoDTO crear(UsuarioAltaDTO datos) {
         if (datos.rol() == Rol.CLIENTE) {
             throw new AltaClienteNoPermitidaException("Los clientes se dan de alta desde la sección de Clientes");
         }
@@ -72,13 +73,13 @@ public class UsuarioService {
         nuevo.setContrasena(passwordEncoder.encode(nuevo.getContrasena()));
 
         try {
-            return uMapper.toDTO(usuarioRepo.save(nuevo));
+            return uMapper.toListadoDTO(usuarioRepo.save(nuevo));
         } catch (DataIntegrityViolationException  e) {
             throw new NombreUsuarioExistenteException("El nombre de usuario ya está en uso");  // #esto va en el controller creo
         }
     }
     
-    public UsuarioDTO eliminar(Long id, String nombreUsuarioAuth) {
+    public UsuarioListadoDTO eliminar(Long id, String nombreUsuarioAuth) {
         
         Usuario usuarioAEliminar = obtenerPorId(id);
         Usuario usuarioAutenticado = obtenerPorNombreUsuario(nombreUsuarioAuth);
@@ -87,7 +88,7 @@ public class UsuarioService {
         
         if(!puedeEliminarse(usuarioAEliminar)){
             usuarioAEliminar.setActivo(false);
-            return uMapper.toDTO(usuarioRepo.save(usuarioAEliminar)); // Retorna el cliente inhabilitado (activo = false)
+            return uMapper.toListadoDTO(usuarioRepo.save(usuarioAEliminar)); // Retorna el cliente inhabilitado (activo = false)
             //El usuario tiene proyectos asociados, no se puede eliminar
         }
         
@@ -127,7 +128,7 @@ public class UsuarioService {
             nuevoToken = tokenService.generarToken(usuarioActualizado);
         }
         // 3. Si editó a OTRO usuario, 'nuevoToken' va como null
-        return new RespuestaActualizacion(uMapper.toDTO(usuarioActualizado), nuevoToken);
+        return new RespuestaActualizacion(uMapper.toListadoDTO(usuarioActualizado), nuevoToken);
     }
     
     public Usuario buscarParaLogin(String nombreUsuario) {

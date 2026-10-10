@@ -4,6 +4,7 @@ import BACKEND.SPADONI.P2PP.DTO.ClienteDTO;
 import BACKEND.SPADONI.P2PP.DTO.ClienteDatosDTO;
 import BACKEND.SPADONI.P2PP.exceptions.ClienteInhabilitadoException;
 import BACKEND.SPADONI.P2PP.exceptions.ClienteNoEncontradoException;
+import BACKEND.SPADONI.P2PP.exceptions.ClienteSinCredenciales;
 import BACKEND.SPADONI.P2PP.mapper.ClienteMapper;
 import BACKEND.SPADONI.P2PP.model.Cliente;
 import BACKEND.SPADONI.P2PP.repository.ClienteRepository;
@@ -35,7 +36,7 @@ public class ClienteService {
     }
 
     public List<ClienteDTO> listar() {
-        return cMapper.listToDTO(clienteRepo.findAll());
+        return cMapper.toDTO(clienteRepo.findAll());
     }
 
     public ClienteDTO crear(ClienteDatosDTO datos) {
@@ -69,16 +70,23 @@ public class ClienteService {
     public Cliente obtenerActivo(Long clienteId) {
 
         Cliente cliente = obtenerPorId(clienteId);
-
+        
+        /*  NO PASA NADA SI EL CLIENTE ESTÁ INACTIVO, SE LE ASIGA EL PROYECTO PERO EL CLIENTE IGUAL NO PUEDE ENTRAR A SU CUENTA
         if (Boolean.FALSE.equals(cliente.getActivo())) {
             throw new ClienteInhabilitadoException("No se pueden asignar proyectos a un cliente inhabilitado");
-        }
+        }*/
 
         return cliente;
     }
     
     public void habilitar(Long id) {
         Cliente cliente = obtenerPorId(id); // Trae el cliente o tira excepción si no existe
+
+        // Validamos primero que no sea null, y luego que no esté vacío.
+        if(cliente.getNombreUsuario() == null || cliente.getNombreUsuario().trim().isEmpty()) {
+            throw new ClienteSinCredenciales("El cliente no puede ser habilitado porque no tiene credenciales");
+        }
+
         cliente.setActivo(true);
         clienteRepo.save(cliente);
     }

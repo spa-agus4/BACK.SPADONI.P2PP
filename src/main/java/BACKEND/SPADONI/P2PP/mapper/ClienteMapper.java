@@ -29,7 +29,7 @@ public class ClienteMapper {
         return dto;
     }
     
-    public List<ClienteDTO> listToDTO(List<Cliente> clientes){
+    public List<ClienteDTO> toDTO(List<Cliente> clientes){
         
         List<ClienteDTO> dtos = new ArrayList<>();
         
