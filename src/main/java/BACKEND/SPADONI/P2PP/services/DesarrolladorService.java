@@ -8,6 +8,8 @@ import BACKEND.SPADONI.P2PP.exceptions.DesarrolladorNoEncontradoException;
 import BACKEND.SPADONI.P2PP.exceptions.NombreDesarrolladorExistenteException;
 import BACKEND.SPADONI.P2PP.mapper.DesarrolladorMapper;
 import BACKEND.SPADONI.P2PP.model.Desarrollador;
+import BACKEND.SPADONI.P2PP.model.EstadoProceso;
+import BACKEND.SPADONI.P2PP.model.Proyecto;
 import BACKEND.SPADONI.P2PP.model.Usuario;
 import BACKEND.SPADONI.P2PP.repository.DesarrolladorRepository;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -23,19 +25,22 @@ public class DesarrolladorService {
 
     private final UsuarioService usuarioService;
     private final ProyectoService proyectoService;
-
+    private final AsignacionDesarrolladorService asignacionDevService;
+    
     private final DesarrolladorMapper dMapper;
 
     public DesarrolladorService(
             DesarrolladorRepository devRepo,
             DesarrolladorMapper dMapper,
             UsuarioService usuarioService,
-            ProyectoService proyectoService) {
+            ProyectoService proyectoService,
+            AsignacionDesarrolladorService asignacionDevService) {
 
         this.devRepo = devRepo;
         this.dMapper = dMapper;
         this.usuarioService = usuarioService;
         this.proyectoService = proyectoService;
+        this.asignacionDevService = asignacionDevService;
     }
 
     private Desarrollador obtenerPorId(Long id) {
@@ -47,22 +52,25 @@ public class DesarrolladorService {
         return dMapper.toDTO(devRepo.findAll());
     }
 
-    public List<DesarrolladorDTO> listarPorProyecto(Long proyectoId, String nombreUsuario) {
-
+    public List<DesarrolladorDTO> listarAsignadosActualesPorProyecto(Long proyectoId, String nombreUsuario) {
+        validarAccesoAlProyectoSegunUsuario(proyectoId, nombreUsuario);
+        return dMapper.toDTO(asignacionDevService.listarAsignadosActuales(proyectoId));
+    }
+    
+    public List<DesarrolladorDTO> listarHistorialPorProyecto(Long proyectoId, String nombreUsuario) {
+        validarAccesoAlProyectoSegunUsuario(proyectoId, nombreUsuario);
+        return dMapper.toDTO(asignacionDevService.listarParticipantesHistoricos(proyectoId));
+    }
+    
+    private void validarAccesoAlProyectoSegunUsuario(Long proyectoId, String nombreUsuario){
         Usuario usuario = usuarioService.obtenerPorNombreUsuario(nombreUsuario);
-
+        
         // Verificamos si el proyecto con ID proyectoId es uno de los que el usuario puede ver
         if (!proyectoService.puedeVerProyecto(proyectoId, usuario)) {
             throw new AccesoProyectoDenegadoException("No tenés permiso para ver los desarrolladores de este proyecto");
         }
-
-        return listarPorProyectoId(proyectoId);
     }
-
-    private List<DesarrolladorDTO> listarPorProyectoId(Long proyectoId) {
-        return dMapper.toDTO(devRepo.findByProyectoId(proyectoId));
-    }
-
+            
     public DesarrolladorDTO crear(DesarrolladorAltaDTO datos) {
 
         Desarrollador d = new Desarrollador(datos.nombre(), datos.habilidades(), true);
@@ -74,9 +82,14 @@ public class DesarrolladorService {
         }
     }
 
+    @Transactional
     public void eliminar(Long id) {
-        Desarrollador d = obtenerPorId(id);
-        devRepo.delete(d);
+
+        Desarrollador desarrollador = obtenerPorId(id);
+
+        asignacionDevService.eliminarHistorialDeDesarrollador(id);
+
+        devRepo.delete(desarrollador);
     }
     
     @Transactional
@@ -90,7 +103,7 @@ public class DesarrolladorService {
         }
         if (datos.disponible() != null) {
             if (!d.getDisponible() && datos.disponible()) {
-                d.setProyecto(null);
+                d.setProyecto(null);    // # quitarr
             }
             d.setDisponible(datos.disponible());
         }

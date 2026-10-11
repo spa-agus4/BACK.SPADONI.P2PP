@@ -73,7 +73,7 @@ public class ProyectoService {
         return pMapper.toDTO(proyectoRepo.save(p));
     }
     
-    private boolean puedeVerProyecto(Proyecto p, Usuario u){
+    public boolean puedeVerProyecto(Proyecto p, Usuario u){
         ProyectoViewer viewer = proyectoViewerFactory.obtenerViewer(u.getRol());
         return viewer.puedeVerProyecto(u, p); 
     }
@@ -104,7 +104,7 @@ public class ProyectoService {
     }
 
     private void liberarDevs(Long proyectoId) {
-        asignacionDevService.removerDevsDeProyecto(proyectoId);
+        asignacionDevService.cerrarAsignacionesVigentesDeProyecto(proyectoId);
     }
 
     private Proyecto aplicarDatos(Proyecto p, ProyectoDatosDTO datos) {
@@ -121,7 +121,7 @@ public class ProyectoService {
     @Transactional
     public void eliminar(Long proyectoId) {
         Proyecto proyecto = obtenerPorId(proyectoId);
-        liberarDevs(proyectoId);
+        asignacionDevService.eliminarHistorialDeProyecto(proyectoId);
         proyectoRepo.delete(proyecto);
     }
 }

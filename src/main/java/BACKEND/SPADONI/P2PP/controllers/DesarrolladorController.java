@@ -35,9 +35,15 @@ public class DesarrolladorController {
      */
     @GetMapping("/proyecto/{proyectoId}")
     public List<DesarrolladorDTO> listarPorProyecto(@PathVariable Long proyectoId, Authentication auth) {
-        return devService.listarPorProyecto(proyectoId, auth.getName());
+        return devService.listarAsignadosActualesPorProyecto(proyectoId, auth.getName());
     }
-
+    
+    // Lo mismo que arriba, pero es para ser llamada desde la lista histórica
+    @GetMapping("/proyecto/historial/{proyectoId}")
+    public List<DesarrolladorDTO> listarHistorialPorProyecto(@PathVariable Long proyectoId, Authentication auth) {
+        return devService.listarHistorialPorProyecto(proyectoId, auth.getName());
+    }
+    
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public DesarrolladorDTO crear(@Valid @RequestBody DesarrolladorAltaDTO datos) {
